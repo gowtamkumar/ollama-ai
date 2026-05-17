@@ -1,0 +1,54 @@
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - ollama-net
+    entrypoint: >
+      bash -c "
+        ollama serve &
+        sleep 5 &&
+        ollama pull deepseek-coder-v2 &&
+        echo 'Hello' | ollama run deepseek-coder-v2 &&
+        tail -f /dev/null
+      "
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "8801:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - LOG_LEVEL=DEBUG
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - DEFAULT_MODEL=deepseek-coder-v2
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    networks:
+      - ollama-net
+
+volumes:
+  ollama_data:
+  open-webui:
+
+networks:
+  ollama-net:
+    driver: bridge
+
+# terminal use:
+# docker exec -it ollama ollama run gemma3
+
+## coding for model
+# llama3
+# codegemma
+# deepseek-coder-v2
+# codellama
