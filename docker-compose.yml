@@ -9,14 +9,14 @@ services:
     restart: unless-stopped
     networks:
       - ollama-net
-    entrypoint: >
-      bash -c "
-        ollama serve &
-        sleep 5 &&
-        ollama pull deepseek-coder-v2 &&
-        echo 'Hello' | ollama run deepseek-coder-v2 &&
-        tail -f /dev/null
-      "
+    # entrypoint: >
+    #   bash -c "
+    #     ollama serve &
+    #     sleep 5 &&
+    #     ollama pull deepseek-coder-v2 &&
+    #     echo 'Hello' | ollama run deepseek-coder-v2 &&
+    #     tail -f /dev/null
+    #   "
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
     container_name: open-webui
@@ -52,3 +52,12 @@ networks:
 # codegemma
 # deepseek-coder-v2
 # codellama
+# ollama pull qwen3:14b
+# ollama pull deepseek-r1:14b
+# | Model           | Size      | Use Case                 | Recommendation                               |
+# | --------------- | --------- | ------------------------ | -------------------------------------------- |
+# | Qwen3 14B       | ~9-11 GB  | Coding + General AI      | ⭐ Best overall                               |
+# | Qwen3 8B        | ~5-6 GB   | Fast coding assistant    | ⭐ Fastest                                    |
+# | DeepSeek-R1 14B | ~9-11 GB  | Reasoning & architecture | ⭐ Great for ERP design                       |
+# | Qwen3 30B-A3B   | MoE       | Efficient reasoning      | ⭐ Very good                                  |
+# | Qwen3.6 27B     | ~17-20 GB | Strong but heavy         | ⚠️ Only if you can tolerate slower responses |
