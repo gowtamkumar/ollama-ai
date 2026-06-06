@@ -1,0 +1,8 @@
+FROM qwen2.5-coder:7b
+
+# Cline-এর system prompt বড়, তাই বড় context দরকার (নাহলে truncate হয়ে broken tool call হয়)
+PARAMETER num_ctx 16384
+
+# কম temperature = বেশি deterministic / structured tool output
+PARAMETER temperature 0.1
+PARAMETER top_p 0.8

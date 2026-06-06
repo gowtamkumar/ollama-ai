@@ -8,6 +8,8 @@
         "--rm",
         "--network",
         "ollama-ai_ai-net",
+        "-e",
+        "RAG_API_URL=http://ai-rag-api:8011",
         "ollama-ai-mcp-rag:latest"
       ],
       "disabled": false,

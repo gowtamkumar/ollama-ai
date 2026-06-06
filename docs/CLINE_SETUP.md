@@ -15,9 +15,9 @@
 
 ```text
 VS Code
-  ├── Cline ──► Ollama (chat model: qwen3:8b / qwen3:14b)
+  ├── Cline ──► Ollama (chat model: qwen2.5-coder:7b)
   │      └──► MCP server ──► rag-api ──► ollama(embed) + qdrant   (codebase search)
-  └── Continue (optional) ──► Ollama (autocomplete: qwen3:8b)
+  └── Continue (optional) ──► Ollama (autocomplete: qwen2.5-coder:1.5b-base)
 ```
 
 - **Cline** = main agent (multi-file edit, terminal, MCP RAG)
@@ -38,7 +38,7 @@ docker compose --profile mcp build mcp-rag
 
 # সব ঠিক আছে কিনা
 docker compose ps
-docker exec -it ollama ollama list      # qwen3 + nomic-embed-text আছে কিনা
+docker exec -it ollama ollama list      # qwen2.5-coder + nomic-embed-text আছে কিনা
 curl http://localhost:8011/health       # {"status":"ok"}
 ```
 
@@ -65,18 +65,16 @@ docker compose logs -f indexer          # "Scan complete. Total files in index: 
 1. Cline panel খোলো → উপরের **⚙️ Settings** icon
 2. নিচের মান বসাও:
 
-| Field | Value |
-|-------|-------|
-| API Provider | `Ollama` |
-| Base URL | `http://localhost:11434` |
-| Model | `qwen3:14b` (slow হলে `qwen3:8b`) |
+| Field        | Value                    |
+| ------------ | ------------------------ |
+| API Provider | `Ollama`                 |
+| Base URL     | `http://localhost:11434` |
+| Model        | `qwen2.5-coder:7b`       |
 
 3. Save করো।
 4. টেস্ট: Cline-এ লেখো `Write a Python function to reverse a string` — উত্তর এলে connection ঠিক।
 
-> Model কখন কোনটা:
-> - `qwen3:8b` → দ্রুত, daily coding/chat
-> - `qwen3:14b` → ভারী reasoning / architecture / বড় refactor
+> Autocomplete দরকার হলে Continue-তে `qwen2.5-coder:1.5b-base` ব্যবহার করো।
 
 ---
 
@@ -102,6 +100,8 @@ Cline panel → **MCP Servers** → **Configure MCP Servers**
         "--rm",
         "--network",
         "ollama-ai_ai-net",
+        "-e",
+        "RAG_API_URL=http://ai-rag-api:8011",
         "ollama-ai-mcp-rag:latest"
       ],
       "disabled": false,
@@ -162,16 +162,16 @@ Cline-এ inline autocomplete নেই। চাইলে Continue শুধু
 {
   "models": [
     {
-      "title": "Qwen3 14B (Ollama)",
+      "title": "Qwen2.5 Coder 7B (Ollama)",
       "provider": "ollama",
-      "model": "qwen3:14b",
+      "model": "qwen2.5-coder:7b",
       "apiBase": "http://localhost:11434"
     }
   ],
   "tabAutocompleteModel": {
-    "title": "Qwen3 8B Autocomplete",
+    "title": "Qwen2.5 Coder 1.5B FIM",
     "provider": "ollama",
-    "model": "qwen3:8b",
+    "model": "qwen2.5-coder:1.5b-base",
     "apiBase": "http://localhost:11434"
   }
 }
@@ -195,14 +195,14 @@ Cline-এ inline autocomplete নেই। চাইলে Continue শুধু
 
 ## 8. Troubleshooting
 
-| সমস্যা | সমাধান |
-|--------|--------|
-| Cline Ollama-তে connect হয় না | Base URL `http://localhost:11434` (https না); `docker compose ps`-এ ollama চলছে? |
-| MCP server active হয় না | image build হয়েছে? `docker compose --profile mcp build mcp-rag`; JSON syntax ঠিক? |
-| `RAG search failed: connection` | main stack চালু? network নাম `ollama-ai_ai-net` মিলছে? |
-| search খালি ফেরত | project `projects/`-এ আছে? `docker compose logs -f indexer` |
-| `docker: command not found` (Cline থেকে) | VS Code যে shell-এ চলে সেখানে `docker` PATH-এ আছে কিনা |
-| উত্তর খুব slow | `qwen3:8b`-এ নামাও; বড় model শুধু কঠিন কাজে |
+| সমস্যা                                   | সমাধান                                                                             |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| Cline Ollama-তে connect হয় না           | Base URL `http://localhost:11434` (https না); `docker compose ps`-এ ollama চলছে?   |
+| MCP server active হয় না                 | image build হয়েছে? `docker compose --profile mcp build mcp-rag`; JSON syntax ঠিক? |
+| `RAG search failed: connection`          | main stack চালু? network নাম `ollama-ai_ai-net` মিলছে?                             |
+| search খালি ফেরত                         | project `projects/`-এ আছে? `docker compose logs -f indexer`                        |
+| `docker: command not found` (Cline থেকে) | VS Code যে shell-এ চলে সেখানে `docker` PATH-এ আছে কিনা                             |
+| উত্তর খুব slow                           | `qwen2.5-coder:7b` keep করো; একসাথে অনেক model load করো না                         |
 
 দরকারি লগ:
 
@@ -216,14 +216,14 @@ docker compose logs -f ollama
 
 ## 9. দ্রুত Reference
 
-| জিনিস | মান |
-|------|-----|
-| Ollama Base URL | `http://localhost:11434` |
-| Chat model | `qwen3:14b` / `qwen3:8b` |
-| Embed model | `nomic-embed-text` |
-| RAG API | `http://localhost:8011` |
+| জিনিস            | মান                               |
+| ---------------- | --------------------------------- |
+| Ollama Base URL  | `http://localhost:11434`          |
+| Chat model       | `qwen2.5-coder:7b`                |
+| Embed model      | `nomic-embed-text`                |
+| RAG API          | `http://localhost:8011`           |
 | Qdrant dashboard | `http://localhost:6333/dashboard` |
-| Open WebUI | `http://localhost:8801` |
-| Docker network | `ollama-ai_ai-net` |
-| MCP image | `ollama-ai-mcp-rag:latest` |
-| MCP tools | `search_codebase`, `get_context` |
+| Open WebUI       | `http://localhost:8801`           |
+| Docker network   | `ollama-ai_ai-net`                |
+| MCP image        | `ollama-ai-mcp-rag:latest`        |
+| MCP tools        | `search_codebase`, `get_context`  |

@@ -12,13 +12,37 @@ This repo packages a local, Docker-based AI coding backend:
 
 It is not a full Cursor clone, but it gives you the local backend pieces needed for Roo Code, Cline, VS Code Chat, Open WebUI, or custom tooling.
 
+## Documentation
+
+- [`docs/DEVELOPER_GUIDE.md`](docs/DEVELOPER_GUIDE.md) — complete developer manual (every component, config, flow, troubleshooting). See section 16 for the v2 retrieval features.
+- [`docs/RAG_API.md`](docs/RAG_API.md) — RAG and API internals, line-by-line
+- [`docs/CLINE_SETUP.md`](docs/CLINE_SETUP.md) — Cline configuration walkthrough
+- [`docs/MODELS.md`](docs/MODELS.md) — adding/managing models, custom Cline-optimized models
+- [`clients/continue-config.example.json`](clients/continue-config.example.json) — Continue config (FIM autocomplete + RAG context)
+
+## v2 Retrieval Features
+
+- Code-specialized models (`qwen2.5-coder`) + FIM autocomplete model
+- Realtime file-watch indexing (no more fixed 30s polling)
+- Boundary-aware (function/class) chunking
+- Hybrid search: dense + sparse BM25 with RRF fusion
+- Cross-encoder reranking
+- Metadata filtering (`language`, `path_prefix`) and `.ragignore`
+
+Enabling v2 needs a one-time re-index:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
 ## Architecture
 
 ```text
 VS Code extension / Open WebUI / custom script
         |
         v
-Ollama chat model: qwen3:8b, qwen3:14b, deepseek-r1:14b
+Ollama coding model: qwen2.5-coder:7b
         |
         v
 RAG API -> Ollama embedding model -> Qdrant codebase collection
@@ -34,7 +58,7 @@ Python indexer daemon scans ./projects
 - Enough disk space for models
 - CPU works, but large models will be slow without GPU
 
-For Ryzen 7 5700G + 30 GB RAM, start with `qwen3:8b`. Use `qwen3:14b` when you can tolerate slower responses.
+For coding-only use, use `qwen2.5-coder:7b` in Cline and `qwen2.5-coder:1.5b-base` for Continue autocomplete.
 
 ## Project Layout
 
@@ -76,12 +100,11 @@ Start everything:
 docker compose up -d --build
 ```
 
-The first run pulls these models by default:
+The first run pulls these models from `.env`:
 
 - `nomic-embed-text`
-- `qwen3:8b`
-- `qwen3:14b`
-- `deepseek-r1:14b`
+- `qwen2.5-coder:7b`
+- `qwen2.5-coder:1.5b-base`
 
 You can change that in `.env` before starting.
 
@@ -140,16 +163,11 @@ Ollama settings:
 ```json
 {
   "baseUrl": "http://localhost:11434",
-  "model": "qwen3:8b"
+  "model": "qwen2.5-coder:7b"
 }
 ```
 
-For heavier reasoning, switch the model to:
-
-```text
-qwen3:14b
-deepseek-r1:14b
-```
+For inline autocomplete, use `qwen2.5-coder:1.5b-base` in Continue.
 
 Important: most VS Code extensions will not automatically use this Qdrant RAG API unless they support custom context providers or MCP/tool wiring. Two workflows:
 
@@ -192,13 +210,13 @@ docker exec -it ollama ollama list
 Run a model in the terminal:
 
 ```bash
-docker exec -it ollama ollama run qwen3:8b
+docker exec -it ollama ollama run qwen2.5-coder:7b
 ```
 
 Pull another model:
 
 ```bash
-docker exec -it ollama ollama pull qwen3:14b
+docker exec -it ollama ollama pull qwen2.5-coder:1.5b-base
 ```
 
 Rebuild only the indexer:
@@ -251,7 +269,7 @@ If search returns no results, wait for indexing to finish:
 docker compose logs -f indexer
 ```
 
-If Ollama is slow on CPU, use `qwen3:8b` first and keep `qwen3:14b` only for architecture or harder reasoning tasks.
+If Ollama is slow on CPU, keep only one coding model loaded at a time and use `qwen2.5-coder:7b` for Cline.
 
 If the RAG API fails, check:
 

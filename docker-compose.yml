@@ -23,9 +23,9 @@ services:
         condition: service_healthy
     environment:
       - OLLAMA_HOST=http://ollama:11434
-      - CHAT_MODELS=${CHAT_MODELS:-qwen3:14b}
-      # - CHAT_MODELS=${CHAT_MODELS:-qwen3:8b qwen3:14b}
+      - CHAT_MODELS=${CHAT_MODELS:-}
       - REASONING_MODELS=${REASONING_MODELS:-}
+      - AUTOCOMPLETE_MODELS=${AUTOCOMPLETE_MODELS:-}
       - EMBED_MODEL=${EMBED_MODEL:-nomic-embed-text}
     entrypoint: ["/bin/sh", "/scripts/pull-models.sh"]
     volumes:
@@ -64,20 +64,21 @@ services:
     container_name: ai-indexer
     volumes:
       - ./projects:/projects
+      - fastembed_cache:/app/cache
     environment:
       - OLLAMA_URL=http://ollama:11434
       - QDRANT_URL=http://qdrant:6333
       - EMBED_MODEL=${EMBED_MODEL:-nomic-embed-text}
       - COLLECTION_NAME=${COLLECTION_NAME:-codebase}
       - PROJECTS_DIR=/projects
-      - SCAN_INTERVAL=${SCAN_INTERVAL:-30}
+      - SCAN_INTERVAL=${SCAN_INTERVAL:-60}
+      - HYBRID_ENABLED=${HYBRID_ENABLED:-true}
+      - SPARSE_MODEL=${SPARSE_MODEL:-Qdrant/bm25}
     depends_on:
       ollama:
         condition: service_healthy
       qdrant:
         condition: service_started
-      model-init:
-        condition: service_completed_successfully
     restart: unless-stopped
     networks:
       - ai-net
@@ -87,11 +88,17 @@ services:
     container_name: ai-rag-api
     ports:
       - "8011:8011"
+    volumes:
+      - fastembed_cache:/app/cache
     environment:
       - OLLAMA_URL=http://ollama:11434
       - QDRANT_URL=http://qdrant:6333
       - EMBED_MODEL=${EMBED_MODEL:-nomic-embed-text}
       - COLLECTION_NAME=${COLLECTION_NAME:-codebase}
+      - HYBRID_ENABLED=${HYBRID_ENABLED:-true}
+      - SPARSE_MODEL=${SPARSE_MODEL:-Qdrant/bm25}
+      - RERANK_ENABLED=${RERANK_ENABLED:-true}
+      - RERANK_MODEL=${RERANK_MODEL:-Xenova/ms-marco-MiniLM-L-6-v2}
     depends_on:
       ollama:
         condition: service_healthy
@@ -138,6 +145,7 @@ services:
 volumes:
   ollama_data:
   qdrant_data:
+  fastembed_cache:
 
 networks:
   ai-net:

@@ -1,0 +1,41 @@
+{
+  "models": [
+    {
+      "title": "Qwen2.5 Coder 7B (Ollama)",
+      "provider": "ollama",
+      "model": "qwen2.5-coder:7b",
+      "apiBase": "http://localhost:11434"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "Qwen2.5 Coder 1.5B FIM",
+    "provider": "ollama",
+    "model": "qwen2.5-coder:1.5b-base",
+    "apiBase": "http://localhost:11434"
+  },
+  "tabAutocompleteOptions": {
+    "useCache": true,
+    "maxPromptTokens": 1024,
+    "debounceDelay": 350
+  },
+  "embeddingsProvider": {
+    "provider": "ollama",
+    "model": "nomic-embed-text",
+    "apiBase": "http://localhost:11434"
+  },
+  "contextProviders": [
+    { "name": "code", "params": {} },
+    { "name": "diff", "params": {} },
+    { "name": "terminal", "params": {} },
+    { "name": "codebase", "params": {} },
+    {
+      "name": "http",
+      "params": {
+        "name": "local-rag",
+        "url": "http://localhost:8011/context",
+        "description": "Semantic search over the locally indexed codebase via the RAG API.",
+        "displayTitle": "Local RAG"
+      }
+    }
+  ]
+}

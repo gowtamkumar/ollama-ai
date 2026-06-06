@@ -11,14 +11,19 @@ mcp = FastMCP("local-codebase-rag")
 
 @mcp.tool()
 def search_codebase(query: str, limit: int = 8) -> str:
-    """Semantic search over the locally indexed codebase (the ./projects folder).
+    """Semantic + keyword search over the locally indexed codebase.
 
-    Use this to find where something is implemented, locate related code,
-    or discover relevant files before editing. Returns matching code chunks
-    with their file paths and line ranges.
+    Call this FIRST for project analysis, codebase overview, architecture
+    questions, "where is X implemented", planning, refactoring, or any coding
+    task that needs repository context. Do not ask a follow-up question for
+    broad requests like "analyze this project"; search the codebase and provide
+    the best overview from available evidence. Returns matching code chunks
+    with file paths, line ranges, and relevance scores.
 
     Args:
-        query: A natural-language description of what you are looking for.
+        query: Natural-language description of what you are looking for.
+            Good examples: "Project overview and structure",
+            "authentication flow and JWT guards", "invoice approval logic".
         limit: Maximum number of code chunks to return (1-50).
     """
     try:
@@ -55,8 +60,10 @@ def search_codebase(query: str, limit: int = 8) -> str:
 def get_context(query: str, limit: int = 8, max_chars: int = 9000) -> str:
     """Retrieve compact, prompt-ready context from the indexed codebase.
 
-    Returns a single text block (size-limited by max_chars) that can be used
-    directly as background context when answering a question or planning a change.
+    Call this before edits or detailed explanations so the answer is grounded
+    in real repository context. For broad project analysis, use query values
+    like "Project overview and structure main modules architecture". Returns a
+    single size-limited text block with file:line headers.
 
     Args:
         query: The question or task you need codebase context for.

@@ -1,0 +1,39 @@
+# Cline Project Rules — Local RAG Auto-Context
+
+Use the `local-codebase-rag` MCP tools proactively.
+
+## Always Retrieve Context First
+
+- For project analysis, architecture questions, module overview, "where is X",
+  planning, refactoring, or debugging, FIRST call `search_codebase`.
+- For detailed explanations or edits, call `get_context` after the first search.
+- Do not guess file paths, module names, APIs, or architecture. Verify with RAG.
+
+## Do Not Ask Unnecessary Follow-Up Questions
+
+- If the user asks a broad request like "analyze this project", do not ask
+  "what specifically?".
+- Instead, run:
+  `search_codebase("Project overview and structure main modules architecture", 10)`
+- Then summarize the best available evidence.
+- Ask a follow-up only when the task is impossible or destructive without a choice.
+
+## Search Strategy
+
+- Start broad, then narrow:
+  - "Project overview and structure"
+  - "backend modules and architecture"
+  - "frontend structure and routes"
+  - "authentication flow and RBAC"
+- If results are weak, refine the query once before responding.
+
+## Editing Rules
+
+- Before editing, retrieve context and identify the target files.
+- Make minimal changes.
+- Explain what changed and how to verify it.
+
+## Model/Tool Reliability
+
+- Use `qwen2.5-coder:7b-cline` for Cline (large 16k context = reliable tool calls).
+- Never use `qwen2.5-coder:1.5b-base` in Cline; it is only for Continue autocomplete.
