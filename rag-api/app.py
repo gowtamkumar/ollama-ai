@@ -259,3 +259,36 @@ def context(request: ContextRequest) -> dict[str, Any]:
         "context": "\n".join(blocks),
         "results": results[: len(blocks)],
     }
+
+
+class ContinueContextRequest(BaseModel):
+    query: str = Field(default="", description="Continue user query")
+    fullInput: str | None = Field(default=None)
+    limit: int = Field(default=8, ge=1, le=50)
+    max_chars: int = Field(default=9000, ge=1000, le=30000)
+
+
+@app.post("/continue/context")
+def continue_context(request: ContinueContextRequest) -> list[dict[str, str]]:
+    """Continue HTTP context provider format: returns a list of context items."""
+    query = (request.query or request.fullInput or "").strip()
+    if not query:
+        return []
+    search = ContextRequest(query=query, limit=request.limit, max_chars=request.max_chars)
+    results = search_points(search)
+    items: list[dict[str, str]] = []
+    used_chars = 0
+    for result in results:
+        name = f"{result['file_path']}:{result['start_line']}-{result['end_line']}"
+        content = f"{name}\n{result['content']}"
+        if used_chars + len(content) > request.max_chars:
+            break
+        items.append(
+            {
+                "name": result["file_path"].split("/")[-1],
+                "description": name,
+                "content": content,
+            }
+        )
+        used_chars += len(content)
+    return items

@@ -75,9 +75,10 @@ API কোড: `rag-api/app.py`
 
 | Endpoint   | Method | কাজ                                                          |
 | ---------- | ------ | ------------------------------------------------------------ |
-| `/health`  | GET    | সার্ভিস বেঁচে আছে কিনা চেক                                   |
-| `/search`  | POST   | প্রশ্নের সাথে মিলে যাওয়া raw code chunk list                |
-| `/context` | POST   | prompt-এ paste করার মতো পরিষ্কার, size-limited context block |
+| `/health`           | GET  | সার্ভিস বেঁচে আছে কিনা চেক                                   |
+| `/search`           | POST | প্রশ্নের সাথে মিলে যাওয়া raw code chunk list                |
+| `/context`          | POST | prompt-এ paste করার মতো পরিষ্কার, size-limited context block |
+| `/continue/context` | POST | Continue HTTP provider format (`[{name, description, content}]`) |
 
 Base URL (host থেকে): `http://localhost:8011`
 Base URL (অন্য container থেকে): `http://ai-rag-api:8011`
@@ -401,7 +402,12 @@ curl http://localhost:8011/context \
 
 ## 11. VS Code-এ কীভাবে কাজে লাগাবে
 
-⚠️ বেশিরভাগ extension (Roo Code/Cline/Continue) এই `rag-api` নিজে থেকে call করবে না। দুটো বাস্তব উপায়:
+**Continue HTTP context provider:** Continue-এর জন্য একটা ডেডিকেটেড endpoint আছে —
+`POST /continue/context`। এটা Continue-এর প্রত্যাশিত array format (`[{name, description, content}]`)
+ফেরত দেয়। Continue config-এ `http` provider-এর `url` এটাতে সেট করো:
+`http://localhost:8011/continue/context` (দেখো [`CLINE_SETUP.md`](CLINE_SETUP.md) section 6)।
+
+⚠️ অন্য extension গুলো (Roo Code/Cline) এই `rag-api` নিজে থেকে call করবে না। দুটো বাস্তব উপায়:
 
 **Option A — Manual context (এখনই কাজ করে):**
 

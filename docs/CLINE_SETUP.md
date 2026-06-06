@@ -150,35 +150,62 @@ Cline নিজে search করে ফাইল খুঁজে edit করব�
 
 ---
 
-## 6. (Optional) Continue — শুধু Tab Autocomplete
+## 6. Continue — Chat + Autocomplete + RAG (CPU-তে recommended)
 
-Cline-এ inline autocomplete নেই। চাইলে Continue শুধু autocomplete-এর জন্য পাশাপাশি রাখতে পারো।
+CPU-only machine-এ Cline-এর agentic tool-call 7B model দিয়ে অনির্ভরযোগ্য। তাই Continue + RAG বেশি practical: chat, edit, tab autocomplete, আর `@codebase`/`@Local RAG` context।
 
 1. Extensions → **Continue** install
-2. Continue config (`~/.continue/config.json` বা UI) খোলো
-3. autocomplete model সেট করো:
+2. Continue config খোলো: `~/.continue/config.yaml` (নতুন version YAML ব্যবহার করে)
+3. পুরো config এই দিয়ে replace করো (`clients/continue-config.example.yaml`-এও আছে):
 
-```json
-{
-  "models": [
-    {
-      "title": "Qwen2.5 Coder 7B (Ollama)",
-      "provider": "ollama",
-      "model": "qwen2.5-coder:7b",
-      "apiBase": "http://localhost:11434"
-    }
-  ],
-  "tabAutocompleteModel": {
-    "title": "Qwen2.5 Coder 1.5B FIM",
-    "provider": "ollama",
-    "model": "qwen2.5-coder:1.5b-base",
-    "apiBase": "http://localhost:11434"
-  }
-}
+```yaml
+name: Local Coding Config
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Qwen2.5 Coder 7B
+    provider: ollama
+    model: qwen2.5-coder:7b
+    apiBase: http://localhost:11434
+    roles: [chat, edit, apply]
+
+  - name: Qwen2.5 Coder 1.5B (FIM)
+    provider: ollama
+    model: qwen2.5-coder:1.5b-base
+    apiBase: http://localhost:11434
+    roles: [autocomplete]
+
+  - name: Nomic Embed
+    provider: ollama
+    model: nomic-embed-text
+    apiBase: http://localhost:11434
+    roles: [embed]
+
+context:
+  - provider: code
+  - provider: diff
+  - provider: terminal
+  - provider: codebase          # Continue-এর নিজের index
+  - provider: http              # এই stack-এর hybrid + rerank RAG
+    params:
+      url: http://localhost:8011/continue/context
+      title: Local RAG
 ```
 
-> Division of labor: **Continue = autocomplete**, **Cline = agentic + RAG**।
-> RAM বাঁচাতে চাইলে Continue বাদ দিয়ে শুধু Cline রাখো।
+4. Save করো। Continue নিজে থেকে reload করবে।
+
+### ব্যবহার
+
+| চাও | কীভাবে |
+|-----|--------|
+| Chat / প্রশ্ন | Continue panel-এ লেখো |
+| Codebase-aware উত্তর | প্রশ্নে `@codebase` বা `@Local RAG` যোগ করো |
+| Inline suggestion | কোড টাইপ করলে autocomplete নিজেই আসবে |
+| File edit | কোড select → `Ctrl+I` |
+
+> দুটো RAG পথ আছে: `@codebase` = Continue-এর নিজস্ব index; `@Local RAG` = এই stack-এর
+> hybrid + rerank API (`/continue/context`), যা সাধারণত বেশি নির্ভুল।
 
 ---
 

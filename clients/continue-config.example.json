@@ -32,7 +32,7 @@
       "name": "http",
       "params": {
         "name": "local-rag",
-        "url": "http://localhost:8011/context",
+        "url": "http://localhost:8011/continue/context",
         "description": "Semantic search over the locally indexed codebase via the RAG API.",
         "displayTitle": "Local RAG"
       }

@@ -1,0 +1,42 @@
+name: Local Coding Config
+version: 1.0.0
+schema: v1
+
+models:
+  # Chat / edit — main coding model
+  - name: Qwen2.5 Coder 7B
+    provider: ollama
+    model: qwen2.5-coder:7b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+
+  # Tab autocomplete (FIM)
+  - name: Qwen2.5 Coder 1.5B (FIM)
+    provider: ollama
+    model: qwen2.5-coder:1.5b-base
+    apiBase: http://localhost:11434
+    roles:
+      - autocomplete
+
+  # Embeddings for @codebase (Continue's own index)
+  - name: Nomic Embed
+    provider: ollama
+    model: nomic-embed-text
+    apiBase: http://localhost:11434
+    roles:
+      - embed
+
+context:
+  - provider: code
+  - provider: diff
+  - provider: terminal
+  # Continue's built-in codebase index (uses nomic-embed above)
+  - provider: codebase
+  # Richer hybrid + rerank RAG from this stack's rag-api
+  - provider: http
+    params:
+      url: http://localhost:8011/continue/context
+      title: Local RAG
