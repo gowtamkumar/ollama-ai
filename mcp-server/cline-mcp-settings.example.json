@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "local-codebase-rag": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--network",
+        "ollama-ai_ai-net",
+        "ollama-ai-mcp-rag:latest"
+      ],
+      "disabled": false,
+      "autoApprove": ["search_codebase", "get_context"]
+    }
+  }
+}

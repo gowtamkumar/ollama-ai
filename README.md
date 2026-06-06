@@ -1,253 +1,260 @@
-# 🧠 Ollama AI — Local LLM Server with Docker
+# Ollama Local AI Coding Stack
 
-Run powerful open-source AI coding models **locally** using [Ollama](https://ollama.com/) + [Open WebUI](https://github.com/open-webui/open-webui), fully containerized with Docker. Connect to [Cline](https://github.com/cline/cline) in VS Code for AI-assisted coding — **100% offline, no API keys needed**.
+This repo packages a local, Docker-based AI coding backend:
 
----
+- Ollama for local chat and coding models
+- Qdrant for vector search memory
+- `nomic-embed-text` embeddings through Ollama
+- Python indexer daemon for repo scanning and incremental re-indexing
+- RAG API for semantic code search/context retrieval
+- Open WebUI for browser chat
+- Optional MCP filesystem server profile
 
-## ✨ Features
+It is not a full Cursor clone, but it gives you the local backend pieces needed for Roo Code, Cline, VS Code Chat, Open WebUI, or custom tooling.
 
-- 🚀 Run LLMs locally — no cloud, no API keys
-- 🧑‍💻 Pre-configured with `deepseek-coder-v2` for coding tasks
-- 💬 Chat UI via Open WebUI at `http://localhost:8801`
-- 🔌 Direct API at `http://localhost:11434`
-- 🔁 Auto-restarts on crash or reboot
-- 💾 Persistent model storage (won't re-download on restart)
-- 🔗 Ready to connect with **Cline** (VS Code AI coding extension)
+## Architecture
 
----
-
-## 📦 Services
-
-| Service        | Image                              | Port (Host → Container) | Description                     |
-| -------------- | ---------------------------------- | ------------------------ | ------------------------------- |
-| **ollama**     | `ollama/ollama`                    | `11434 → 11434`          | LLM backend & model manager     |
-| **open-webui** | `ghcr.io/open-webui/open-webui`    | `8801 → 8080`            | Web-based chat UI for Ollama    |
-
----
-
-## 🛠️ Requirements
-
-| Tool | Version | Install |
-|------|---------|---------|
-| Docker | 24+ | [docs.docker.com](https://docs.docker.com/get-docker/) |
-| Docker Compose | v2+ | Included with Docker Desktop |
-
-> **GPU (Optional):** For faster inference, ensure your Docker has NVIDIA GPU support. CPU mode works but is slower.
-
----
-
-## 🚀 Getting Started
-
-### 1. Clone the repository
-
-```bash
-git clone <your-repo-url>
-cd ollama-ai
+```text
+VS Code extension / Open WebUI / custom script
+        |
+        v
+Ollama chat model: qwen3:8b, qwen3:14b, deepseek-r1:14b
+        |
+        v
+RAG API -> Ollama embedding model -> Qdrant codebase collection
+        ^
+        |
+Python indexer daemon scans ./projects
 ```
 
-### 2. Start the stack
+## Requirements
 
-```bash
-docker compose up -d
+- Docker 24+
+- Docker Compose v2+
+- Enough disk space for models
+- CPU works, but large models will be slow without GPU
+
+For Ryzen 7 5700G + 30 GB RAM, start with `qwen3:8b`. Use `qwen3:14b` when you can tolerate slower responses.
+
+## Project Layout
+
+```text
+ollama-ai/
+├── docker-compose.yml
+├── .env.example
+├── indexer/
+│   ├── app.py
+│   ├── Dockerfile
+│   └── requirements.txt
+├── rag-api/
+│   ├── app.py
+│   ├── Dockerfile
+│   └── requirements.txt
+└── projects/
+    └── put-your-codebases-here
 ```
 
-On first start, it will automatically:
-1. Start the **Ollama** server
-2. Pull the `deepseek-coder-v2` model (~9 GB, one-time download)
-3. Run a warm-up test prompt
-4. Start **Open WebUI**
+## Quick Start
 
-### 3. Check running containers
+Copy the env template if you want to customize models:
+
+```bash
+cp .env.example .env
+```
+
+Put the projects you want indexed inside `./projects`:
+
+```bash
+mkdir -p projects
+# Example:
+# cp -r /path/to/your/project projects/your-project
+```
+
+Start everything:
+
+```bash
+docker compose up -d --build
+```
+
+The first run pulls these models by default:
+
+- `nomic-embed-text`
+- `qwen3:8b`
+- `qwen3:14b`
+- `deepseek-r1:14b`
+
+You can change that in `.env` before starting.
+
+## Services
+
+- Ollama API: `http://localhost:11434`
+- Open WebUI: `http://localhost:8801`
+- Qdrant API/dashboard: `http://localhost:6333/dashboard`
+- RAG API: `http://localhost:8011`
+
+Check containers:
 
 ```bash
 docker compose ps
 ```
 
-Expected output:
-```
-NAME          STATUS    PORTS
-ollama        Running   0.0.0.0:11434->11434/tcp
-open-webui    Running   0.0.0.0:8801->8080/tcp
-```
-
-### 4. Watch logs
+Watch indexer logs:
 
 ```bash
-# All services
-docker compose logs -f
-
-# Ollama only (watch model download progress)
-docker compose logs -f ollama
-
-# Open WebUI only
-docker compose logs -f open-webui
+docker compose logs -f indexer
 ```
 
----
+## RAG API Usage
 
-## 🌐 Using Open WebUI
-
-1. Open your browser → **http://localhost:8801**
-2. On first visit, **create an admin account** (local only)
-3. Select **`deepseek-coder-v2`** from the model dropdown
-4. Start chatting!
-
----
-
-## 🖥️ Using the Terminal (CLI)
-
-Run a model interactively inside the container:
+Search indexed code:
 
 ```bash
-docker exec -it ollama ollama run deepseek-coder-v2
-```
-
-Run with a one-shot prompt:
-
-```bash
-docker exec -it ollama ollama run deepseek-coder-v2 "Explain recursion in Python"
-```
-
-### Manage Models
-
-```bash
-# List downloaded models
-docker exec -it ollama ollama list
-
-# Pull a new model
-docker exec -it ollama ollama pull codellama
-
-# Pull other coding models
-docker exec -it ollama ollama pull codegemma
-docker exec -it ollama ollama pull llama3
-docker exec -it ollama ollama pull codellama:7b
-docker exec -it ollama ollama pull deepseek-coder-v2
-
-# Remove a model
-docker exec -it ollama ollama rm codellama
-```
-
----
-
-## 🔌 Connect with Cline (VS Code)
-
-[Cline](https://marketplace.visualstudio.com/items?itemName=saoudrizwan.claude-dev) is a VS Code extension that gives you an AI coding assistant. Follow these steps to connect it to your local Ollama server.
-
-### Step 1 — Install Cline Extension
-
-1. Open **VS Code**
-2. Go to **Extensions** (`Ctrl+Shift+X`)
-3. Search for **`Cline`**
-4. Click **Install**
-
-### Step 2 — Configure Cline to use Ollama
-
-1. Open Cline from the sidebar (robot icon)
-2. Click the **⚙️ Settings** icon in Cline panel
-3. Set the **API Provider** to **`Ollama`**
-4. Set the following values:
-
-| Field | Value |
-|-------|-------|
-| **API Provider** | `Ollama` |
-| **Base URL** | `http://localhost:11434` |
-| **Model** | `deepseek-coder-v2` |
-
-> ✅ No API key needed — it's running locally!
-
-### Step 3 — Test the connection
-
-In Cline, type a message like:
-
-```
-Write a Python function to reverse a linked list
-```
-
-Cline will send the request to your local Ollama container and stream the response back.
-
----
-
-## 🧩 Using Ollama API Directly
-
-The Ollama REST API is available at `http://localhost:11434`.
-
-### Generate a completion
-
-```bash
-curl http://localhost:11434/api/generate \
-  -d '{
-    "model": "deepseek-coder-v2",
-    "prompt": "Write a hello world in Go",
-    "stream": false
-  }'
-```
-
-### Chat completion (OpenAI-compatible)
-
-```bash
-curl http://localhost:11434/v1/chat/completions \
+curl http://localhost:8011/search \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "deepseek-coder-v2",
-    "messages": [
-      {"role": "user", "content": "Explain Docker networking"}
-    ]
-  }'
+  -d '{"query":"where is authentication handled?","limit":8}'
 ```
 
-### List available models
+Get compact context for a chat prompt:
 
 ```bash
-curl http://localhost:11434/api/tags
+curl http://localhost:8011/context \
+  -H "Content-Type: application/json" \
+  -d '{"query":"explain the invoice approval flow","limit":8,"max_chars":9000}'
 ```
 
----
+The `/context` output can be pasted into Roo Code, Cline, VS Code Chat, or Open WebUI when you want stronger project awareness.
 
-## 🤖 Recommended Coding Models
+For a deep, line-by-line explanation of how the RAG API and indexing flow work, see [`docs/RAG_API.md`](docs/RAG_API.md).
 
-| Model | Size | Best For |
-|-------|------|----------|
-| `deepseek-coder-v2` | ~9 GB | General coding, multi-language |
-| `codellama:7b` | ~4 GB | Lightweight coding tasks |
-| `codegemma:7b` | ~5 GB | Google's coding model |
-| `llama3` | ~5 GB | General purpose + reasoning |
+## VS Code Extension Setup
 
----
+Use any extension that can talk to Ollama. Recommended order:
 
-## 🛑 Stop & Cleanup
+1. Roo Code
+2. Cline
+3. VS Code built-in chat with Ollama support
+4. Continue as fallback
+
+Ollama settings:
+
+```json
+{
+  "baseUrl": "http://localhost:11434",
+  "model": "qwen3:8b"
+}
+```
+
+For heavier reasoning, switch the model to:
+
+```text
+qwen3:14b
+deepseek-r1:14b
+```
+
+Important: most VS Code extensions will not automatically use this Qdrant RAG API unless they support custom context providers or MCP/tool wiring. Two workflows:
+
+Manual workflow (works everywhere):
+
+1. Let the extension read workspace files directly.
+2. Use `http://localhost:8011/context` when you need semantic codebase memory.
+3. Paste the returned context into the chat before asking for a code change.
+
+Automatic workflow with Cline (most Cursor-like):
+
+Cline supports MCP, so it can call the RAG API by itself. Build the MCP server image and register it in Cline:
 
 ```bash
-# Stop containers (keep data)
+docker compose --profile mcp build mcp-rag
+```
+
+Then add `mcp-server/cline-mcp-settings.example.json` to your Cline MCP settings. Full step-by-step is in [`docs/RAG_API.md`](docs/RAG_API.md) section 14.
+
+For a complete Cline configuration walkthrough (Ollama model + MCP RAG + optional Continue autocomplete), see [`docs/CLINE_SETUP.md`](docs/CLINE_SETUP.md).
+
+## Optional MCP Filesystem
+
+The compose file includes an optional MCP filesystem server profile:
+
+```bash
+docker compose --profile mcp up -d mcp-filesystem
+```
+
+MCP filesystem servers are normally stdio-based, so a VS Code extension must be configured to launch or attach to the MCP command it expects. Treat this as optional. Roo Code/Cline workspace file access is usually enough for normal coding.
+
+## Useful Commands
+
+List pulled models:
+
+```bash
+docker exec -it ollama ollama list
+```
+
+Run a model in the terminal:
+
+```bash
+docker exec -it ollama ollama run qwen3:8b
+```
+
+Pull another model:
+
+```bash
+docker exec -it ollama ollama pull qwen3:14b
+```
+
+Rebuild only the indexer:
+
+```bash
+docker compose up -d --build indexer
+```
+
+Stop without deleting model/vector data:
+
+```bash
 docker compose down
+```
 
-# Stop and remove ALL data (models will re-download!)
+Delete all persisted data:
+
+```bash
 docker compose down -v
 ```
 
----
+## Indexing Behavior
 
-## 🔧 Troubleshooting
+The indexer scans `./projects` every `SCAN_INTERVAL` seconds.
 
-| Issue | Solution |
-|-------|----------|
-| Open WebUI not loading | Wait 30s for it to fully start, then refresh |
-| Model download stuck | Check logs: `docker compose logs -f ollama` |
-| Cline not connecting | Ensure Base URL is `http://localhost:11434` (not https) |
-| Out of disk space | Models are large. Use `docker exec -it ollama ollama rm <model>` to free space |
-| Slow responses | Normal on CPU. For GPU, add NVIDIA runtime to docker-compose.yml |
+It indexes common source and config files:
 
----
-
-## 📁 Project Structure
-
-```
-ollama-ai/
-├── docker-compose.yml   # Service definitions
-└── README.md            # This file
+```text
+.ts .tsx .js .jsx .py .go .json .md .txt .html .css .rs .java .cpp .c .h .sh .yml .yaml
 ```
 
----
+It ignores heavy/generated folders such as:
 
-## 📄 License
+```text
+node_modules .git dist build venv .venv __pycache__ target out .idea .vscode
+```
 
-MIT — feel free to use and modify.
+State is stored in `projects/.indexer_state.json`, so unchanged files are skipped on the next scan.
+
+## Troubleshooting
+
+If the first run is slow, model downloads are still running:
+
+```bash
+docker compose logs -f model-init
+```
+
+If search returns no results, wait for indexing to finish:
+
+```bash
+docker compose logs -f indexer
+```
+
+If Ollama is slow on CPU, use `qwen3:8b` first and keep `qwen3:14b` only for architecture or harder reasoning tasks.
+
+If the RAG API fails, check:
+
+```bash
+docker compose logs -f rag-api
+```
