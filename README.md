@@ -276,3 +276,12 @@ If the RAG API fails, check:
 ```bash
 docker compose logs -f rag-api
 ```
+
+# Pull a new model
+docker exec -it ollama ollama pull <model_name>
+
+# Remove an existing model
+docker exec -it ollama ollama rm <model_name>
+
+# List all downloaded models to check names/size
+docker exec -it ollama ollama list

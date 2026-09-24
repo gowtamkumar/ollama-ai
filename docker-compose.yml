@@ -6,6 +6,14 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - OLLAMA_VULKAN=1
+      - OLLAMA_IGPU_ENABLE=1
+    group_add:
+      - "44"
+      - "992"
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 10s
